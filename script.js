@@ -1,14 +1,29 @@
+// import { default as Prova } from "./modules/prova.js";
+
+// let prova = new Prova("ciao");
+// prova.funzioneProva();
+// prova.funzioneProva2();
+// console.log(prova);
+
 const calculator = (function createCalculator() {
   let placedNumber = [];
   let total = 0;
   let operator = "";
-  let currentNumber = 0;
+  let currentNumber = "";
+  let equalTriggered = false;
 
   const obj = {};
   obj.moveNumberToArray = function moveNumberToArray(number) {
     placedNumber.push(Number(number));
   };
   obj.calcTotal = function calcTotal() {
+    if (
+      placedNumber[0] == 0 &&
+      operator == "÷" &&
+      typeof placedNumber[0] == "number"
+    ) {
+      this.clear();
+    }
     total = operations[operator](placedNumber[0], placedNumber[1]);
   };
   obj.getTotal = function getTotal() {
@@ -21,41 +36,62 @@ const calculator = (function createCalculator() {
   };
   obj.updateCurrentNumber = function updateCurrentNumber(inputNumber) {
     // currentValue = String(currentNumber) + inputNumber;
+    if ((currentNumber.match(new RegExp(/\./g)) || []).length > 1) {
+      this.clear();
+    }
     let stringValue = String(currentNumber) + String(inputNumber);
-    currentNumber = Number(stringValue);
+    console.log(stringValue);
+    currentNumber = stringValue;
     display.updateDisplay(this.getCurrentNumber());
   };
+
+  obj.deleteCharCurrentNumber = function deleteCharCurrentNumber() {
+    let stringValue = String(currentNumber);
+    if (stringValue.length > 0) {
+      currentNumber = Number(stringValue.slice(0, -1));
+      console.log(stringValue);
+      display.updateDisplay(this.getCurrentNumber());
+    }
+    if (equalTriggered) {
+      this.clear();
+    }
+  };
+
   obj.getCurrentNumber = function getCurrentNumber() {
     return currentNumber;
   };
   obj.resetCurrentNumber = function resetCurrentNumber() {
-    currentNumber = 0;
+    currentNumber = "";
   };
   obj.updateOperator = function updateOperator(operatorInserted) {
-    if (!(operator == "=")) {
+    if (!equalTriggered) {
       this.updateValue();
-    } else {
-      this.resetCurrentNumber();
-      display.updateUpperDisplay(this.getString());
     }
+
     operator = String(operatorInserted);
     console.log(operator);
+    equalTriggered = false;
   };
   obj.resetPlacedNumberWithTotal = function () {
     placedNumber = [this.getTotal()];
   };
-  //   obj.calcEqual = function calcEqual() {
-  //     this.moveNumberToArray(currentNumber);
-  //     this.resetCurrentNumber();
-  //     display.updateUpperDisplay(this.getString());
-  //     if (placedNumber.length == 2) {
-  //       console.log("calcTotal fired");
-  //       this.calcTotal();
-  //       operator = "=";
-  //       this.resetPlacedNumberWithTotal();
-  //       display.updateDisplay(this.getTotal());
-  //     }
-  //   };
+  obj.calcEqual = function calcEqual() {
+    if (equalTriggered) {
+      this.clear();
+    } else {
+      equalTriggered = true;
+      this.moveNumberToArray(currentNumber);
+      this.resetCurrentNumber();
+      display.updateUpperDisplay(this.getString());
+      if (placedNumber.length == 2) {
+        console.log("calcTotal fired");
+        this.calcTotal();
+        operator = "";
+        this.resetPlacedNumberWithTotal();
+        display.updateDisplay(this.getTotal());
+      }
+    }
+  };
   obj.updateValue = function () {
     this.moveNumberToArray(currentNumber);
     this.resetCurrentNumber();
@@ -72,21 +108,31 @@ const calculator = (function createCalculator() {
     console.log(placedNumber.length == 2);
   };
 
+  obj.clear = function objClear() {
+    placedNumber = [];
+    total = 0;
+    operator = "";
+    currentNumber = "";
+    equalTriggered = false;
+    display.updateDisplay();
+    display.updateUpperDisplay();
+  };
+
   return obj;
 })();
 
 const operations = {
   "+": function add(number1, number2) {
-    return number1 + number2;
+    return (number1 + number2).toFixed(3);
   },
   "-": function sub(number1, number2) {
-    return number1 - number2;
+    return (number1 - number2).toFixed(3);
   },
   "×": function molt(number1, number2) {
-    return number1 * number2;
+    return (number1 * number2).toFixed(3);
   },
   "÷": function div(number1, number2) {
-    return number1 / number2;
+    return (number1 / number2).toFixed(3);
   },
 };
 
@@ -120,7 +166,15 @@ numbersButtons.forEach((number) => {
   });
 });
 
-// const total = document.querySelector(".total");
-// total.addEventListener("click", () => {
-//   calculator.calcEqual();
-// });
+const total = document.querySelector(".total");
+total.addEventListener("click", () => {
+  calculator.calcEqual();
+});
+
+const clearButton = document.querySelector(".clear");
+clearButton.addEventListener("click", calculator.clear);
+
+const deleteButton = document.querySelector(".delete");
+deleteButton.addEventListener("click", () => {
+  calculator.deleteCharCurrentNumber();
+});
